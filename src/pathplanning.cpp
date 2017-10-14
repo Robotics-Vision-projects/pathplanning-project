@@ -1,13 +1,19 @@
+// Standard libraries
 #include <iostream>
 #include <string>
 #include <sstream>
 #include <fstream>
+// Third party libraries
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+// RobWork libraries
 #include <rw/rw.hpp>
 #include <rwlibs/pathplanners/rrt/RRTPlanner.hpp>
 #include <rwlibs/pathplanners/rrt/RRTQToQPlanner.hpp>
 #include <rwlibs/proximitystrategies/ProximityStrategyFactory.hpp>
 
 using namespace std;
+namespace fs = boost::filesystem;
 using namespace rw::common;
 using namespace rw::math;
 using namespace rw::kinematics;
@@ -48,8 +54,12 @@ int main(int argc, char** argv) {
 
     rw::math::Math::seed(10);
 
-    const string wcFile = "/home/jalop17/01-scripts/01-cpp/robotic-exercises/"
-    					  "pathplanning-project/Kr16WallWorkCell/Scene.wc.xml";
+    // Get the path to the workcell, relative to the executable file.
+    fs::path proj_path = fs::system_complete(
+            fs::path(argv[0])).parent_path().parent_path();
+    string wcFile = proj_path.string();
+    wcFile.append("/Kr16WallWorkCell/Scene.wc.xml");
+
 	const string deviceName = "KukaKr16";
 	cout << "Trying to use workcell " << wcFile << " and device "
 			<< deviceName << endl;
@@ -115,7 +125,9 @@ int main(int argc, char** argv) {
 				<< endl;
 	}
 
-    ofstream luaScript("path.lua");
+    string dest_path = proj_path.string();
+    dest_path.append("/rqt-path.lua");
+    ofstream luaScript(dest_path);
     if(luaScript.is_open())
     {
         luaScript << "wc = rws.getRobWorkStudio():getWorkCell()\n"
