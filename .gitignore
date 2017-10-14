@@ -38,3 +38,4 @@ bin/**
 # LUA generated script
 rqt-path.lua
 *.xml
+*.user

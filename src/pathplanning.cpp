@@ -74,15 +74,16 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 
-    State state = wc->getDefaultState();
+    State state2(wc->getDefaultState());
+    device.get()->setQ(Q(6, -3.142, -0.827, -3.002, -3.143, 0.099, -1.573), state2);
     Kinematics::gripFrame(wc->findFrame("Bottle"), wc->findFrame("Tool"),
-    					  state);
+                          state2);
+    const State state(state2);
 
 	CollisionDetector detector(wc, 
 			ProximityStrategyFactory::makeDefaultCollisionStrategy());
-    //rw::geometry::Cylinder cylinder(0.05f, 0.05f);
-    detector.addGeometry(wc->findFrame("Bottle"),
-    		rw::geometry::Geometry::makeSphere(SPHERE_DIAMRETER));
+    //detector.addGeometry(wc->findFrame("Bottle"),
+    //		rw::geometry::Geometry::makeSphere(SPHERE_DIAMRETER));
     PlannerConstraint constraint = PlannerConstraint::make(&detector,
     													   device,state);
 
