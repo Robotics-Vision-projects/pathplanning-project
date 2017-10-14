@@ -25,8 +25,10 @@ using namespace rw::trajectory;
 using namespace rwlibs::pathplanners;
 using namespace rwlibs::proximitystrategies;
 
-#define MAXTIME 20.
+#define MAXTIME 60.
 #define SPHERE_DIAMRETER  0.15f
+#define SEED 10
+#define EPSILON 0.16
 
 bool checkCollisions(Device::Ptr device, const State &state,
 					 const CollisionDetector &detector, const Q &q) {
@@ -52,7 +54,7 @@ bool checkCollisions(Device::Ptr device, const State &state,
 
 int main(int argc, char** argv) {
 
-    rw::math::Math::seed(10);
+    rw::math::Math::seed(SEED);
 
     // Get the path to the workcell, relative to the executable file.
     fs::path proj_path = fs::system_complete(
@@ -80,7 +82,7 @@ int main(int argc, char** argv) {
 			ProximityStrategyFactory::makeDefaultCollisionStrategy());
     //rw::geometry::Cylinder cylinder(0.05f, 0.05f);
     detector.addGeometry(wc->findFrame("Bottle"),
-    		rw::geometry::Geometry::makeSphere(0.15f));//rw::geometry::Geometry
+    		rw::geometry::Geometry::makeSphere(SPHERE_DIAMRETER));
     PlannerConstraint constraint = PlannerConstraint::make(&detector,
     													   device,state);
 
@@ -97,7 +99,7 @@ int main(int argc, char** argv) {
 	QSampler::Ptr sampler = QSampler::makeConstrained(
 			QSampler::makeUniform(device),constraint.getQConstraintPtr());
 	QMetric::Ptr metric = MetricFactory::makeEuclidean<Q>();
-    double extend = 0.16;
+    double extend = EPSILON;
 	QToQPlanner::Ptr planner = RRTPlanner::makeQToQPlanner(constraint, sampler,
 			metric, extend, RRTPlanner::RRTConnect);
 
