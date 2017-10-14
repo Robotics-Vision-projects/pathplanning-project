@@ -29,6 +29,7 @@ using namespace rwlibs::proximitystrategies;
 #define SPHERE_DIAMRETER  0.15f
 #define SEED 10
 #define EPSILON 0.16
+#define PATHCOUNT 100
 
 bool checkCollisions(Device::Ptr device, const State &state,
 					 const CollisionDetector &detector, const Q &q) {
@@ -115,7 +116,7 @@ int main(int argc, char** argv) {
 	if (!checkCollisions(device, state, detector, to))
 		return 0;
 
-	cout << "Planning from " << from << " to " << to << endl;
+    cout << "Planning from " << from << " to " << to << endl;
 	QPath path;
 	Timer t;
 	t.resetAndResume();
@@ -153,14 +154,60 @@ int main(int argc, char** argv) {
 					 "rw.sleep(0.1)\n"
 					 "end \n\n"
 					 "setQ({-3.142, -0.827, -3.002, -3.143, 0.099, -1.573})\n"
-					 "attach(bottle,gripper)";
+                     "attach(bottle,gripper)\n";
         for (QPath::iterator it = path.begin()++; it < path.end(); it++) {
             std::stringstream tmp;
             tmp << *it;
             luaScript << "setQ(" << tmp.str().substr(4) << ")" << endl;
         }
         luaScript << "attach(bottle,table)";
+        luaScript.close();
     }
+    else
+    {
+        cout << "ERROR: failed to open/create rqt-path.lua";
+    }
+
+    // STATISTICS
+
+    std::vector<double> epsilons = {0.02, 0.04, 0.08, 0.12, 0.2, 0.3, 0.4, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0};
+    ofstream pathStat(proj_path.string() + "/path-statistics.txt");
+    size_t timeoutCount = 0;
+    if(pathStat.is_open())
+    {
+        for(auto epsilon : epsilons)
+        {
+            for(int i = 0; i < PATHCOUNT; ++i)
+            {
+                QToQPlanner::Ptr planner = RRTPlanner::makeQToQPlanner(constraint, sampler,
+                        metric, epsilon, RRTPlanner::RRTConnect);
+
+                QPath path;
+                Timer t;
+                t.resetAndResume();
+                planner->query(from,to,path,MAXTIME);
+                t.pause();
+                if(t.getTime() < MAXTIME)
+                {
+                    pathStat << epsilon << " " << path.size() << " " << t.getTime() << endl;
+                }
+                else
+                {
+                    ++timeoutCount;
+                }
+            }
+
+        }
+        pathStat.close();
+        cout << "timeouts : " << timeoutCount << endl;
+    }
+    else
+    {
+        cout << "ERROR: failed to open/create path-statistics.txt";
+    }
+
+
+    // -------------------
  
 	cout << "Program done." << endl;
 	return 0;
