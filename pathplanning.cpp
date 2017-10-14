@@ -1,4 +1,7 @@
 #include <iostream>
+#include <string>
+#include <sstream>
+#include <fstream>
 #include <rw/rw.hpp>
 #include <rwlibs/pathplanners/rrt/RRTPlanner.hpp>
 #include <rwlibs/pathplanners/rrt/RRTQToQPlanner.hpp>
@@ -39,20 +42,28 @@ bool checkCollisions(Device::Ptr device, const State &state, const CollisionDete
 }
 
 int main(int argc, char** argv) {
-	const string wcFile = "/home/gunu/Documents/ROVI/workspace/workcells/Kr16WorkCell/Scene.wc.xml";
+
+    rw::math::Math::seed(10);
+
+    const string wcFile = "/home/ezzence/code/Kr16WallWorkCell/Scene.wc.xml";
 	const string deviceName = "KukaKr16";
 	cout << "Trying to use workcell " << wcFile << " and device " << deviceName << endl;
 
 	WorkCell::Ptr wc = WorkCellLoader::Factory::load(wcFile);
 	Device::Ptr device = wc->findDevice(deviceName);
+
 	if (device == NULL) {
 		cerr << "Device: " << deviceName << " not found!" << endl;
 		return 0;
 	}
-	const State state = wc->getDefaultState();
+
+    State state = wc->getDefaultState();
+    Kinematics::gripFrame(wc->findFrame("Bottle"), wc->findFrame("Tool"), state);
 
 	CollisionDetector detector(wc, ProximityStrategyFactory::makeDefaultCollisionStrategy());
-	PlannerConstraint constraint = PlannerConstraint::make(&detector,device,state);
+    //rw::geometry::Cylinder cylinder(0.05f, 0.05f);
+    detector.addGeometry(wc->findFrame("Bottle"), rw::geometry::Geometry::makeSphere(0.15f));//rw::geometry::Geometry
+    PlannerConstraint constraint = PlannerConstraint::make(&detector,device,state);
 
 	/** Most easy way: uses default parameters based on given device
 		sampler: QSampler::makeUniform(device)
@@ -63,12 +74,14 @@ int main(int argc, char** argv) {
 	/** More complex way: allows more detailed definition of parameters and methods */
 	QSampler::Ptr sampler = QSampler::makeConstrained(QSampler::makeUniform(device),constraint.getQConstraintPtr());
 	QMetric::Ptr metric = MetricFactory::makeEuclidean<Q>();
-	double extend = 0.1;
+    double extend = 0.16;
 	QToQPlanner::Ptr planner = RRTPlanner::makeQToQPlanner(constraint, sampler, metric, extend, RRTPlanner::RRTConnect);
 
-	Q from(6,-0.2,-0.6,1.5,0.0,0.6,1.2);
+    //Q from(6,-0.2,-0.6,1.5,0.0,0.6,1.2);
 	//Q to(6,1.7,0.6,-0.8,0.3,0.7,-0.5); // Very difficult for planner
-	Q to(6,1.4,-1.3,1.5,0.3,1.3,1.6);
+    //Q to(6,1.4,-1.3,1.5,0.3,1.3,1.6);
+    Q from(6, -3.142, -0.827, -3.002, -3.143, 0.099, -1.573);
+    Q to(6, 1.571, 0.006, 0.03, 0.153, 0.762, 4.49);
 
 	if (!checkCollisions(device, state, detector, from))
 		return 0;
@@ -86,9 +99,38 @@ int main(int argc, char** argv) {
 		cout << "Notice: max time of " << MAXTIME << " seconds reached." << endl;
 	}
 
-	for (QPath::iterator it = path.begin(); it < path.end(); it++) {
-		cout << *it << endl;
-	}
+    ofstream luaScript("path.lua");
+    if(luaScript.is_open())
+    {
+        luaScript << "wc = rws.getRobWorkStudio():getWorkCell() \n \
+state = wc:getDefaultState() \n \
+device = wc:findDevice(\"KukaKr16\") \n \
+gripper = wc:findFrame(\"Tool\") \n \
+bottle = wc:findFrame(\"Bottle\") \n \
+table = wc:findFrame(\"Table\") \n \
+\n \
+function setQ(q) \n \
+qq = rw.Q(#q,q[1],q[2],q[3],q[4],q[5],q[6]) \n \
+device:setQ(qq,state) \n \
+rws.getRobWorkStudio():setState(state) \n \
+rw.sleep(0.1) \n \
+end \n \
+\n \
+function attach(obj, tool) \n \
+rw.gripFrame(obj, tool, state) \n \
+rws.getRobWorkStudio():setState(state) \n \
+rw.sleep(0.1) \n \
+end \n \n \
+setQ({-3.142, -0.827, -3.002, -3.143, 0.099, -1.573}) \n \
+attach(bottle,gripper)";
+        for (QPath::iterator it = path.begin()++; it < path.end(); it++) {
+            std::stringstream tmp;
+            tmp << *it;
+            luaScript << "setQ(" << tmp.str().substr(4) << ")" << endl;
+        }
+        luaScript << "attach(bottle,table)";
+    }
+
 
 	cout << "Program done." << endl;
 	return 0;
