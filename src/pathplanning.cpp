@@ -19,9 +19,11 @@ using namespace rw::trajectory;
 using namespace rwlibs::pathplanners;
 using namespace rwlibs::proximitystrategies;
 
-#define MAXTIME 10.
+#define MAXTIME 20.
+#define SPHERE_DIAMRETER  0.15f
 
-bool checkCollisions(Device::Ptr device, const State &state, const CollisionDetector &detector, const Q &q) {
+bool checkCollisions(Device::Ptr device, const State &state,
+					 const CollisionDetector &detector, const Q &q) {
 	State testState;
 	CollisionDetector::QueryResult data;
 	bool colFrom;
@@ -34,7 +36,8 @@ bool checkCollisions(Device::Ptr device, const State &state, const CollisionDete
 		cerr << "Colliding frames: " << endl;
 		FramePairSet fps = data.collidingFrames;
 		for (FramePairSet::iterator it = fps.begin(); it != fps.end(); it++) {
-			cerr << (*it).first->getName() << " " << (*it).second->getName() << endl;
+			cerr << (*it).first->getName() << " " << (*it).second->getName()
+					<< endl;
 		}
 		return false;
 	}
@@ -45,9 +48,11 @@ int main(int argc, char** argv) {
 
     rw::math::Math::seed(10);
 
-    const string wcFile = "/home/ezzence/code/Kr16WallWorkCell/Scene.wc.xml";
+    const string wcFile = "/home/jalop17/01-scripts/01-cpp/robotic-exercises/"
+    					  "pathplanning-project/Kr16WallWorkCell/Scene.wc.xml";
 	const string deviceName = "KukaKr16";
-	cout << "Trying to use workcell " << wcFile << " and device " << deviceName << endl;
+	cout << "Trying to use workcell " << wcFile << " and device "
+			<< deviceName << endl;
 
 	WorkCell::Ptr wc = WorkCellLoader::Factory::load(wcFile);
 	Device::Ptr device = wc->findDevice(deviceName);
@@ -58,24 +63,33 @@ int main(int argc, char** argv) {
 	}
 
     State state = wc->getDefaultState();
-    Kinematics::gripFrame(wc->findFrame("Bottle"), wc->findFrame("Tool"), state);
+    Kinematics::gripFrame(wc->findFrame("Bottle"), wc->findFrame("Tool"),
+    					  state);
 
-	CollisionDetector detector(wc, ProximityStrategyFactory::makeDefaultCollisionStrategy());
+	CollisionDetector detector(wc, 
+			ProximityStrategyFactory::makeDefaultCollisionStrategy());
     //rw::geometry::Cylinder cylinder(0.05f, 0.05f);
-    detector.addGeometry(wc->findFrame("Bottle"), rw::geometry::Geometry::makeSphere(0.15f));//rw::geometry::Geometry
-    PlannerConstraint constraint = PlannerConstraint::make(&detector,device,state);
+    detector.addGeometry(wc->findFrame("Bottle"),
+    		rw::geometry::Geometry::makeSphere(0.15f));//rw::geometry::Geometry
+    PlannerConstraint constraint = PlannerConstraint::make(&detector,
+    													   device,state);
 
 	/** Most easy way: uses default parameters based on given device
 		sampler: QSampler::makeUniform(device)
 		metric: PlannerUtil::normalizingInfinityMetric(device->getBounds())
 		extend: 0.05 */
-	//QToQPlanner::Ptr planner = RRTPlanner::makeQToQPlanner(constraint, device, RRTPlanner::RRTConnect);
+	//QToQPlanner::Ptr planner = RRTPlanner::makeQToQPlanner(constraint, device,
+	// RRTPlanner::RRTConnect);
 
-	/** More complex way: allows more detailed definition of parameters and methods */
-	QSampler::Ptr sampler = QSampler::makeConstrained(QSampler::makeUniform(device),constraint.getQConstraintPtr());
+	/* More complex way: allows more detailed definition of parameters and
+	 * methods
+	*/
+	QSampler::Ptr sampler = QSampler::makeConstrained(
+			QSampler::makeUniform(device),constraint.getQConstraintPtr());
 	QMetric::Ptr metric = MetricFactory::makeEuclidean<Q>();
     double extend = 0.16;
-	QToQPlanner::Ptr planner = RRTPlanner::makeQToQPlanner(constraint, sampler, metric, extend, RRTPlanner::RRTConnect);
+	QToQPlanner::Ptr planner = RRTPlanner::makeQToQPlanner(constraint, sampler,
+			metric, extend, RRTPlanner::RRTConnect);
 
     //Q from(6,-0.2,-0.6,1.5,0.0,0.6,1.2);
 	//Q to(6,1.7,0.6,-0.8,0.3,0.7,-0.5); // Very difficult for planner
@@ -94,35 +108,37 @@ int main(int argc, char** argv) {
 	t.resetAndResume();
 	planner->query(from,to,path,MAXTIME);
 	t.pause();
-	cout << "Path of length " << path.size() << " found in " << t.getTime() << " seconds." << endl;
+	cout << "Path of length " << path.size() << " found in " << t.getTime()
+			<< " seconds." << endl;
 	if (t.getTime() >= MAXTIME) {
-		cout << "Notice: max time of " << MAXTIME << " seconds reached." << endl;
+		cout << "Notice: max time of " << MAXTIME << " seconds reached."
+				<< endl;
 	}
 
     ofstream luaScript("path.lua");
     if(luaScript.is_open())
     {
-        luaScript << "wc = rws.getRobWorkStudio():getWorkCell() \n \
-state = wc:getDefaultState() \n \
-device = wc:findDevice(\"KukaKr16\") \n \
-gripper = wc:findFrame(\"Tool\") \n \
-bottle = wc:findFrame(\"Bottle\") \n \
-table = wc:findFrame(\"Table\") \n \
-\n \
-function setQ(q) \n \
-qq = rw.Q(#q,q[1],q[2],q[3],q[4],q[5],q[6]) \n \
-device:setQ(qq,state) \n \
-rws.getRobWorkStudio():setState(state) \n \
-rw.sleep(0.1) \n \
-end \n \
-\n \
-function attach(obj, tool) \n \
-rw.gripFrame(obj, tool, state) \n \
-rws.getRobWorkStudio():setState(state) \n \
-rw.sleep(0.1) \n \
-end \n \n \
-setQ({-3.142, -0.827, -3.002, -3.143, 0.099, -1.573}) \n \
-attach(bottle,gripper)";
+        luaScript << "wc = rws.getRobWorkStudio():getWorkCell()\n"
+					 "state = wc:getDefaultState()\n"
+					 "device = wc:findDevice(\"KukaKr16\")\n"
+					 "gripper = wc:findFrame(\"Tool\")\n"
+					 "bottle = wc:findFrame(\"Bottle\")\n"
+					 "table = wc:findFrame(\"Table\")\n"
+					 "\n"
+					 "function setQ(q) \n"
+					 "qq = rw.Q(#q,q[1],q[2],q[3],q[4],q[5],q[6])\n"
+					 "device:setQ(qq,state)\n"
+					 "rws.getRobWorkStudio():setState(state)\n"
+					 "rw.sleep(0.1)\n"
+					 "end\n"
+					 "\n"
+					 "function attach(obj, tool)\n"
+					 "rw.gripFrame(obj, tool, state)\n"
+					 "rws.getRobWorkStudio():setState(state)\n"
+					 "rw.sleep(0.1)\n"
+					 "end \n\n"
+					 "setQ({-3.142, -0.827, -3.002, -3.143, 0.099, -1.573})\n"
+					 "attach(bottle,gripper)";
         for (QPath::iterator it = path.begin()++; it < path.end(); it++) {
             std::stringstream tmp;
             tmp << *it;
@@ -130,8 +146,7 @@ attach(bottle,gripper)";
         }
         luaScript << "attach(bottle,table)";
     }
-
-
+ 
 	cout << "Program done." << endl;
 	return 0;
 }

@@ -1,0 +1,83 @@
+<WorkCell name="PickPlacePlanner">
+
+
+
+<Frame name="Robot" refframe="WORLD">
+   <RPY> 0 0 0 </RPY> <Pos> -1 0 0.7 </Pos>
+</Frame>
+
+<Include file="KukaKr16/KukaKr16.xml" />
+
+
+<Frame name="ToolMount" refframe="KukaKr16.Joint6">
+    <RPY>0 0 180</RPY> <Pos> 0 0 0.0 </Pos>
+</Frame>
+ <Drawable name="ToolUnit" refframe="ToolMount">
+	 <Polytope file="Geometry/ToolUnit" />
+ </Drawable>
+
+<Frame name="Tool" refframe="ToolMount">
+    <RPY>0 45 0</RPY> <Pos> 0.138 0 0.29 </Pos>
+</Frame>
+
+<Frame name="Pallet" refframe="WORLD">
+     <RPY> 0 0 0 </RPY> <Pos>   0 0 0 </Pos>
+     <Drawable name="Pallet" refframe="Pallet">
+         <Polytope file="Geometry/Pallet3Frames" />
+     </Drawable>
+</Frame>
+
+
+<Frame name="Table" refframe="WORLD">
+     <RPY>90 0 0 </RPY> <Pos> -0.85 -1.1 0.03 </Pos>
+     <Drawable name="Table" refframe="Table">
+         <Polytope file="Geometry/table" />
+     </Drawable>
+</Frame>
+<Frame name="LightFrame" refframe="WORLD">
+     <RPY> 0 0 0 </RPY> <Pos> 1 0 0 </Pos>
+     <Drawable name="LightFrame" refframe="LightFrame">
+         <Polytope file="Geometry/Frame" />
+     </Drawable>
+</Frame>
+  
+<Frame name="Light" refframe="LightFrame">
+     <RPY> 0 0 0 </RPY> <Pos> 0 0 2 </Pos>
+     <Drawable name="Light" refframe="Light">
+         <Polytope file="Geometry/Light" />
+     </Drawable>
+</Frame>
+
+<Frame name="Fence1" refframe="WORLD">
+     <RPY> 0 0 0 </RPY> <Pos> -0.0 0.7 0 </Pos>
+     <Drawable name="Fence" refframe="Fence1">
+         <Polytope file="Geometry/Fence3x2" />
+     </Drawable>
+</Frame>
+
+<Frame name="Floor" refframe="WORLD">
+     <RPY> 0 0 90 </RPY> <Pos> 0.0 0.7 0 </Pos>
+     <Drawable name="Floor" refframe="Floor">
+         <Polytope file="Geometry/Fence3x2" />
+     </Drawable>
+</Frame>
+
+<Frame name="Fence2" refframe="WORLD">
+     <RPY> 90 0 0 </RPY> <Pos> -1.5 0 0 </Pos>
+     <Drawable name="Fence" refframe="Fence2">
+         <Polytope file="Geometry/Fence2x2" />
+     </Drawable>
+</Frame>
+
+
+<Frame name="Bottle" refframe="Pallet"  type="Movable" daf="true" >
+     <RPY> -90 0 90 </RPY> <Pos> 0.0 0.0 0.248624 </Pos>
+     <Drawable name="Bottle" refframe="Bottle">
+         <Polytope file="Geometry/bottle" />
+     </Drawable>
+</Frame>
+
+
+<CollisionSetup file="SceneCollisionSetup.xml" /> 
+
+</WorkCell>

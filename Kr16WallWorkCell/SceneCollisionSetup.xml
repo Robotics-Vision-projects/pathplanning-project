@@ -1,0 +1,13 @@
+<CollisionSetup>
+    <Exclude>
+	<FramePair first="Fence1" second="Fence2" />
+	<FramePair first="Fence1" second="Floor" />
+	<FramePair first="Fence2" second="Floor" />
+	<FramePair first="LightFrame" second="Floor" />
+	<FramePair first="HandlingStation" second="Floor" />
+	<FramePair first="Pallet" second="Floor" />
+	<FramePair first="LightFrame" second="Light" />
+	<FramePair first="KukaKr16.Base" second="Floor" />
+ 	<FramePair first="KukaKr16.Joint6" second="ToolMount" /> 
+   </Exclude>
+</CollisionSetup>
