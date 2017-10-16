@@ -192,7 +192,8 @@ int main(int argc, char** argv) {
     // STATISTICS for epsilon
     std::vector<double> epsilons = {0.01, 0.02, 0.04, 0.06, 0.08, 0.12, 0.16,
                                     0.2, 0.3, 0.4, 0.5};
-    ofstream pathStat(proj_path.string() + "/path-statistics.txt");
+    ofstream pathStat(proj_path.string()
+                      + "/statistics/Datasets/path-statistics.txt");
     size_t timeoutCount = 0;
     if(!pathStat.is_open())
     {
